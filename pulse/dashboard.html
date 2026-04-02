@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nebula Pulse</title>
+  <style>
+    :root {
+      --bg:     #0d0f1a;
+      --card:   #141626;
+      --border: #1e2235;
+      --accent: #7c6af7;
+      --accent2:#4fc3f7;
+      --text:   #e2e8f0;
+      --muted:  #64748b;
+      --green:  #4ade80;
+      --yellow: #facc15;
+      --red:    #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    .meta { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .big-number {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .sub { font-size: 0.82rem; color: var(--muted); }
+    .bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 8px;
+      margin: 10px 0 6px;
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .containers-card { grid-column: 1 / -1; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(74,222,128,0.12);
+      color: var(--green);
+    }
+    .empty { color: var(--muted); text-align: center; padding: 20px; }
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background: var(--green);
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.6rem">&#127756;</span>
+  <h1>Nebula Pulse</h1>
+  <div class="meta">
+    <span class="dot"></span>
+    <span id="ts">connecting...</span>
+    &nbsp;&middot;&nbsp; uptime: <span id="uptime">-</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="card-title">CPU Usage</div>
+    <div class="big-number" id="cpu-val" style="color:var(--accent)">-</div>
+    <div class="bar-wrap">
+      <div class="bar" id="cpu-bar" style="width:0%;background:var(--accent)"></div>
+    </div>
+    <div class="sub">Host CPU across all cores</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Memory</div>
+    <div class="big-number" id="mem-val" style="color:var(--accent2)">-</div>
+    <div class="bar-wrap">
+      <div class="bar" id="mem-bar" style="width:0%;background:var(--accent2)"></div>
+    </div>
+    <div class="sub" id="mem-sub">- MB used of - MB</div>
+  </div>
+
+  <div class="card containers-card">
+    <div class="card-title">Docker Containers</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th>CPU</th>
+          <th>Memory</th>
+          <th>Mem %</th>
+        </tr>
+      </thead>
+      <tbody id="containers-body">
+        <tr><td colspan="5" class="empty">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  function colorFor(pct) {
+    if (pct < 60) return 'var(--green)';
+    if (pct < 85) return 'var(--yellow)';
+    return 'var(--red)';
+  }
+
+  function row(c) {
+    return '<tr>' +
+      '<td><strong>' + c.name + '</strong></td>' +
+      '<td><span class="badge">running</span></td>' +
+      '<td>' + c.cpu + '</td>' +
+      '<td>' + c.mem_used + '</td>' +
+      '<td>' + c.mem_perc + '</td>' +
+      '</tr>';
+  }
+
+  function refresh() {
+    fetch('/metrics')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        document.getElementById('ts').textContent     = d.timestamp;
+        document.getElementById('uptime').textContent = d.uptime;
+
+        var cpu = parseFloat(d.cpu_percent).toFixed(1);
+        var cpuColor = colorFor(parseFloat(cpu));
+        document.getElementById('cpu-val').textContent         = cpu + '%';
+        document.getElementById('cpu-val').style.color         = cpuColor;
+        document.getElementById('cpu-bar').style.width         = Math.min(cpu, 100) + '%';
+        document.getElementById('cpu-bar').style.background    = cpuColor;
+
+        var mem = d.memory;
+        var mp  = mem.used_percent.toFixed(1);
+        var memColor = colorFor(parseFloat(mp));
+        document.getElementById('mem-val').textContent         = mp + '%';
+        document.getElementById('mem-val').style.color         = memColor;
+        document.getElementById('mem-bar').style.width         = Math.min(mp, 100) + '%';
+        document.getElementById('mem-bar').style.background    = memColor;
+        document.getElementById('mem-sub').textContent         =
+          mem.used_mb + ' MB used of ' + mem.total_mb + ' MB  (free: ' + mem.free_mb + ' MB)';
+
+        var tbody = document.getElementById('containers-body');
+        if (!d.containers || d.containers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">No containers running</td></tr>';
+        } else {
+          tbody.innerHTML = d.containers.map(row).join('');
+        }
+      })
+      .catch(function() {
+        document.getElementById('ts').textContent = 'connection error';
+      });
+  }
+
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>

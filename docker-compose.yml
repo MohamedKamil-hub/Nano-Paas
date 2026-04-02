@@ -1,0 +1,80 @@
+
+services:
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nebula-proxy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+      - '10443:443'  
+    volumes:
+      - ./data/npm:/data
+      - ./data/letsencrypt:/etc/letsencrypt
+      - ./logs/npm:/var/log/nginx:rw
+    environment:
+      DISABLE_IPV6: 'true'
+    networks:
+      - nebula-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+
+
+nebula-pulse:
+    build: ./pulse
+    container_name: nebula-pulse
+    restart: unless-stopped
+    ports:
+      - '2019:2019'
+    volumes:
+      - /proc:/proc:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - nebula-network
+
+
+
+
+
+
+
+
+
+
+
+  static-web:
+    image: nginx:alpine
+    container_name: nebula-static
+    restart: unless-stopped
+    volumes:
+      - ./apps/static-web/html:/usr/share/nginx/html:ro
+      - ./logs/static:/var/log/nginx:rw
+    networks:
+      - nebula-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+networks:
+  nebula-network:
+    external: true
+

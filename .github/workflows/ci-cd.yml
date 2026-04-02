@@ -1,0 +1,42 @@
+# .github/workflows/ci-cd-demo.yml
+name: CI/CD NebulaMKK
+on: [push]
+
+jobs:
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate main docker-compose
+        run: |
+          echo "🔍 Validating main configuration "
+          docker compose config
+          echo "✅ docker-compose.yml válid"
+      
+      - name: Check apps structure
+        run: |
+          echo " apps structure:"
+          find apps/ -type f -name "*.yml" -o -name "*.yaml" -o -name "Dockerfile" | head -10
+  
+  cd:
+    name: Continuous Delivery (Simulated)
+    runs-on: ubuntu-latest
+    needs: ci
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deployment Ready
+        run: |
+          echo " DEPLOYMENT READY"
+          echo "---------------"
+          echo "Build completed successfully."
+          echo "Para desplegar en producción:"
+          echo "1. ssh usuario@servidor"
+          echo "2. cd ~/proyecto"
+          echo "3. git pull"
+          echo "4. docker compose up -d"
+          echo ""
+          echo " this project is ready for production."
