@@ -12,6 +12,8 @@
 **Nebula** es una plataforma de "Plataforma como Servicio" (PaaS) diseñada para competir en un nicho que los gigantes como Heroku o Coolify han olvidado: **la eficiencia extrema de recursos.**
 
 Mientras que otras soluciones requieren 2GB+ de RAM solo para el panel de control, Nebula está optimizado para ejecutarse en **Raspberry Pi, VPS económicos (512MB RAM) o hardware reciclado**, permitiendo desplegar aplicaciones web con un consumo mínimo.
+Una plataforma de servicios en la nube (PaaS) ultra-ligera diseñada para transformar hardware modesto en una infraestructura empresarial segura, privada y fácil de gestionar.
+
 
 ## ✨ Características Principales
 * **Nano-Footprint:** El núcleo del sistema consume menos de 20MB de RAM.
